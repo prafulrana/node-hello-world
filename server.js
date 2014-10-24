@@ -4,3 +4,7 @@ http.createServer(function (req, res) {
   res.end('Hello 5!!!!\n');
 }).listen(80);
 console.log('Server running at Anand!');
+
+for (var i = 0; i < 10000; i++) {
+  console.log(i)
+}
