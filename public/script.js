@@ -31,6 +31,28 @@ uploadMode.addEventListener('click', () => setMode('upload'));
 
 async function initCamera() {
   if (!stream) {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      preview.srcObject = stream;
+    } catch (err) {
+      console.error('camera init failed', err);
+      return false;
+    }
+  }
+  return true;
+}
+
+startBtn.addEventListener('click', async () => {
+  const ok = await initCamera();
+  if (!ok) return;
+  chunks = [];
+  recorder = new MediaRecorder(stream);
+  recorder.ondataavailable = e => {
+    // some browsers fire an empty Blob event at start; guard against it
+    if (e.data && e.data.size > 0) {
+      chunks.push(e.data);
+    }
+  };
     stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     preview.srcObject = stream;
   }
@@ -54,6 +76,9 @@ stopBtn.addEventListener('click', () => {
 });
 
 async function uploadRecording() {
+  if (!chunks.length) return;
+
+
   const blob = new Blob(chunks, { type: 'video/webm' });
   const file = new File([blob], 'recording.webm', { type: 'video/webm' });
   const fd = new FormData();
