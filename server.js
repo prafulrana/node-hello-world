@@ -1,10 +1,87 @@
-var http = require('http');
-http.createServer(function (req, res) {
-  res.writeHead(200, {'Content-Type': 'text/plain'});
-  res.end('Hello 5!!!!\n');
-}).listen(80);
-console.log('Server running at Anand!');
+const express = require('express');
+const multer = require('multer');
+const {
+  S3Client,
+  PutObjectCommand,
+  ListObjectsV2Command,
+  GetObjectCommand
+} = require('@aws-sdk/client-s3');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
-for (var i = 0; i < 10000; i++) {
-  console.log(i)
-}
+const app = express();
+const upload = multer({ storage: multer.memoryStorage() });
+const PORT = process.env.PORT || 3000;
+
+const s3 = new S3Client({
+  region: process.env.AWS_REGION || 'auto',
+  endpoint: process.env.AWS_ENDPOINT_URL_S3,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+  },
+  forcePathStyle: true
+});
+const BUCKET = process.env.BUCKET_NAME;
+
+app.get('/upload', (req, res) => {
+  res.send(`
+    <h1>Upload Video</h1>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+      <input type="file" name="video" accept="video/*" />
+      <button type="submit">Upload</button>
+    </form>
+    <p><a href="/videos">View Videos</a></p>
+  `);
+});
+
+app.post('/upload', upload.single('video'), async (req, res) => {
+  try {
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: BUCKET,
+        Key: req.file.originalname,
+        Body: req.file.buffer,
+        ContentType: req.file.mimetype
+      })
+    );
+    res.redirect('/videos');
+  } catch (err) {
+    res.status(500).send('Upload failed');
+  }
+});
+
+app.get('/videos', async (req, res) => {
+  try {
+    const list = await s3.send(
+      new ListObjectsV2Command({ Bucket: BUCKET })
+    );
+    const items = list.Contents || [];
+    const videos = await Promise.all(
+      items.map(async (item) => {
+        const url = await getSignedUrl(
+          s3,
+          new GetObjectCommand({ Bucket: BUCKET, Key: item.Key }),
+          { expiresIn: 3600 }
+        );
+        return `<div><p>${item.Key}</p><video src="${url}" controls width="320"></video></div>`;
+      })
+    );
+    res.send(`
+      <h1>Uploaded Videos</h1>
+      <p><a href="/upload">Upload more</a></p>
+      ${videos.join('')}
+    `);
+  } catch (err) {
+    res.status(500).send('Could not list videos');
+  }
+});
+
+app.get('/', (req, res) => {
+  res.redirect('/upload');
+});
+
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+});
+
+module.exports = app;
