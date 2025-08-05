@@ -1,5 +1,7 @@
 const express = require('express');
 const multer = require('multer');
+const fs = require('fs');
+const os = require('os');
 const {
   S3Client,
   PutObjectCommand,
@@ -9,7 +11,15 @@ const {
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 const app = express();
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: os.tmpdir(),
+    filename: (req, file, cb) => cb(null, file.originalname)
+  }),
+  limits: {
+    fileSize: parseInt(process.env.MAX_FILE_SIZE || '52428800', 10)
+  }
+});
 const PORT = process.env.PORT || 3000;
 
 const s3 = new S3Client({
@@ -42,14 +52,16 @@ app.post('/upload', upload.single('video'), async (req, res) => {
     return res.status(400).send('Invalid file type');
   }
   try {
+    const fileStream = fs.createReadStream(req.file.path);
     await s3.send(
       new PutObjectCommand({
         Bucket: BUCKET,
         Key: req.file.originalname,
-        Body: req.file.buffer,
+        Body: fileStream,
         ContentType: req.file.mimetype
       })
     );
+    await fs.promises.unlink(req.file.path);
     res.redirect('/videos');
   } catch (err) {
     res.status(500).send('Upload failed');
