@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JudeOps</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>JudeOps</h1>
+    <p class="tagline">Used to judge challenges</p>
+    <div class="mode-toggle">
+      <button id="cameraMode" class="active">Camera</button>
+      <button id="uploadMode">Upload</button>
+    </div>
+
+    <div id="cameraSection">
+      <video id="preview" autoplay muted playsinline class="rounded shadow"></video>
+      <div class="controls">
+        <button id="startBtn">Start Recording</button>
+        <button id="stopBtn" disabled>Stop &amp; Upload</button>
+      </div>
+    </div>
+
+    <div id="uploadSection" class="hidden">
+      <input type="file" id="fileInput" accept="video/*" class="rounded" />
+      <button id="uploadFileBtn">Upload</button>
+    </div>
+
+    <p><a href="/videos">View Uploaded Videos</a></p>
+  </div>
+  <script src="/script.js"></script>
+</body>
+</html>
