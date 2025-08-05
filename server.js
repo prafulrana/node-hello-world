@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const fs = require('fs');
 const os = require('os');
+const path = require('path');
 const {
   S3Client,
   PutObjectCommand,
@@ -11,6 +12,7 @@ const {
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 const app = express();
+app.use(express.static(path.join(__dirname, 'public')));
 const upload = multer({
   storage: multer.diskStorage({
     destination: os.tmpdir(),
@@ -34,14 +36,7 @@ const s3 = new S3Client({
 const BUCKET = process.env.BUCKET_NAME;
 
 app.get('/upload', (req, res) => {
-  res.send(`
-    <h1>Upload Video</h1>
-    <form action="/upload" method="post" enctype="multipart/form-data">
-      <input type="file" name="video" accept="video/*" />
-      <button type="submit">Upload</button>
-    </form>
-    <p><a href="/videos">View Videos</a></p>
-  `);
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.post('/upload', upload.single('video'), async (req, res) => {
@@ -81,13 +76,25 @@ app.get('/videos', async (req, res) => {
           new GetObjectCommand({ Bucket: BUCKET, Key: item.Key }),
           { expiresIn: 3600 }
         );
-        return `<div><p>${item.Key}</p><video src="${url}" controls width="320"></video></div>`;
+        return `<div class="video-card"><p>${item.Key}</p><video src="${url}" controls width="320"></video></div>`;
       })
     );
     res.send(`
-      <h1>Uploaded Videos</h1>
-      <p><a href="/upload">Upload more</a></p>
-      ${videos.join('')}
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <title>JudeOps - Uploaded Videos</title>
+        <link rel="stylesheet" href="/style.css" />
+      </head>
+      <body>
+        <div class="container">
+          <h1>Uploaded Videos</h1>
+          <p><a href="/upload">Upload more</a></p>
+          ${videos.join('')}
+        </div>
+      </body>
+      </html>
     `);
   } catch (err) {
     res.status(500).send('Could not list videos');
@@ -95,7 +102,7 @@ app.get('/videos', async (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.redirect('/upload');
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.listen(PORT, () => {
