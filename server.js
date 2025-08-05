@@ -35,6 +35,12 @@ app.get('/upload', (req, res) => {
 });
 
 app.post('/upload', upload.single('video'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).send('No file uploaded');
+  }
+  if (!req.file.mimetype.startsWith('video/')) {
+    return res.status(400).send('Invalid file type');
+  }
   try {
     await s3.send(
       new PutObjectCommand({
