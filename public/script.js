@@ -53,16 +53,6 @@ startBtn.addEventListener('click', async () => {
       chunks.push(e.data);
     }
   };
-    stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    preview.srcObject = stream;
-  }
-}
-
-startBtn.addEventListener('click', async () => {
-  await initCamera();
-  chunks = [];
-  recorder = new MediaRecorder(stream);
-  recorder.ondataavailable = e => chunks.push(e.data);
   recorder.onstop = uploadRecording;
   recorder.start();
   startBtn.disabled = true;
