@@ -1,16 +1,12 @@
-#start
-1
-2
-3
-4
-5
-#end
-s
-as
+# Node Hello World
 
+This repository contains a minimal [Express](https://expressjs.com/) application that responds with `Hello, World!`.
 
-as
+## Setup
 
-ads
+```bash
+npm install
+npm start
+```
 
-ads
+The application will be available at <http://localhost:3000>.
