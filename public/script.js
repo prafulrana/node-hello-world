@@ -53,6 +53,16 @@ startBtn.addEventListener('click', async () => {
       chunks.push(e.data);
     }
   };
+    stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    preview.srcObject = stream;
+  }
+}
+
+startBtn.addEventListener('click', async () => {
+  await initCamera();
+  chunks = [];
+  recorder = new MediaRecorder(stream);
+  recorder.ondataavailable = e => chunks.push(e.data);
   recorder.onstop = uploadRecording;
   recorder.start();
   startBtn.disabled = true;
@@ -67,6 +77,8 @@ stopBtn.addEventListener('click', () => {
 
 async function uploadRecording() {
   if (!chunks.length) return;
+
+
   const blob = new Blob(chunks, { type: 'video/webm' });
   const file = new File([blob], 'recording.webm', { type: 'video/webm' });
   const fd = new FormData();
